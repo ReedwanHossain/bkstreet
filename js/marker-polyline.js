@@ -100,8 +100,8 @@ L.Polyline.polylineEditor = L.Polyline.extend({
             } else {
                 this.pointIcon = L.icon({
                     iconUrl: 'editmarker.png',
-                    iconSize: [11, 11],
-                    iconAnchor: [6, 6],
+                    iconSize: [9, 9],
+                    iconAnchor: [5, 5],
                 });
             }
             if (options.newPointIcon) {
@@ -109,8 +109,8 @@ L.Polyline.polylineEditor = L.Polyline.extend({
             } else {
                 this.newPointIcon = L.icon({
                     iconUrl: 'editmarker2.png',
-                    iconSize: [11, 11],
-                    iconAnchor: [6, 6],
+                    iconSize: [9, 9],
+                    iconAnchor: [5, 5],
                 });
             }
         };
@@ -222,7 +222,7 @@ L.Polyline.polylineEditor = L.Polyline.extend({
             var that = this;
             var points = this.getLatLngs();
             var marker = L.marker(latLng, {
-                draggable: true,
+                draggable: false,
                 icon: this.pointIcon
             });
 
@@ -246,34 +246,98 @@ L.Polyline.polylineEditor = L.Polyline.extend({
             marker.on('contextmenu', function(event) {
                 var marker = event.target;
                 var pointNo = that._getPointNo(event.target);
+                console.log(pointNo);
+                
                 that._map.removeLayer(marker);
                 that._map.removeLayer(newPointMarker);
                 that._markers.splice(pointNo, 1);
                 that._reloadPolyline(pointNo);
             });
+
+            // $(function() {
+            //     // $("#SeeAllEvents").hide();
+            //     var icon = marker.options.icon
+            //     icon.options.iconSize = [9, 9]
+            //     marker.setIcon(icon)
+
+            //     var timeoutId;
+            //     marker.on('mouseover', function(e) {
+            //         if (!timeoutId) {
+            //             timeoutId = window.setTimeout(function() {
+            //                 timeoutId = null;
+            //                 icon = marker.options.icon
+            //                 icon.options.iconSize = [14, 14]
+            //                 marker.setIcon(icon)
+            //            }, 2000);
+            //         }
+            //     },
+            //     function () {
+            //         if (timeoutId) {
+            //             window.clearTimeout(timeoutId);
+            //             timeoutId = null;
+            //         }
+            //         else {
+            //             icon = marker.options.icon
+            //             icon.options.iconSize = [9, 9]
+            //             marker.setIcon(icon)
+            //         }
+            //     });
+            // });
+
+            marker.on('mouseover', function(e) {
+                var icon = e.target.options.icon
+                icon.options.iconSize = [11, 11]
+                e.target.setIcon(icon)
+            });
+
+            
+            marker.on('mouseout', function(e) {
+                var icon = e.target.options.icon
+                icon.options.iconSize = [9, 9]
+                e.target.setIcon(icon)
+            });
+
             marker.on('click', function(event) {
                 console.log('Marker Click')
                 var marker = event.target;
                 console.log(marker)
                 var pointNo = that._getPointNo(event.target);
+                panos = DATAPOINTS[marker.context.originalPolylineNo].data
+                console.log(panos[pointNo]);
                 if (pointNo == 0 || pointNo == that._markers.length - 1) {
-                    // if(PSV != null){
-                    //     PSV.destroy();
+                    if(PSV != null){
+                        PSV.destroy();
 
-                    //  }
+                     }
                     PSV.destroy();
                     loc.setLatLng([marker._latlng.lat, marker._latlng.lng]).update();
 
                 }
-                PSV.destroy();
+                try {
+                    // statements
+                    PSV.destroy();
+                } catch(e) {
+                    // statements
+                    console.log(e);
+                    var label = event.target.options.label;
+                    $('#photosphere').addClass('photosphere');
+                    $('#map').removeClass('premap');
+                    $('#map').addClass('map');
+                }
+                console.log(marker._latlng);
                 loc.setLatLng([marker._latlng.lat, marker._latlng.lng]).update();
+                // map.setView([marker._latlng.lat, marker._latlng.lng], 15);
+                map.invalidateSize();
+                map.setView([marker._latlng.lat, marker._latlng.lng], map.getZoom());
                 var i = 0;
 
+                console.log(marker.context.originalPolylineNo)
                 PSV = new PhotoSphereViewer({
                     container: 'photosphere',
-                    panorama: DATAPOINTS[marker.context.originalPolylineNo].data[marker.context.originalPointNo].url,
-                    caption: DATAPOINTS[marker.context.originalPolylineNo].data[marker.context.originalPointNo].url,
-                    loading_img: 'assets/photosphere-logo.gif',
+                    // panorama: DATAPOINTS[marker.context.originalPolylineNo].data[marker.context.originalPointNo].url,
+                    panorama: panos[pointNo].url,
+                    //caption: DATAPOINTS[marker.context.originalPolylineNo].data[marker.context.originalPointNo].url,
+                    loading_img: 'assets/img/Spinner-1s-200px.gif',
                     // longitude_range: [-7 * Math.PI / 8, 7 * Math.PI / 8],
                     // latitude_range: [-3 * Math.PI / 4, 3 * Math.PI / 4],
                     anim_speed: '-2rpm',
@@ -293,6 +357,7 @@ L.Polyline.polylineEditor = L.Polyline.extend({
                             onClick: (function(e) {
                                 // var i = 0;
                                 var loading = false;
+                                i = pointNo;
                                 console.log(e);
                                 return function() {
                                     if (loading) {
@@ -302,9 +367,11 @@ L.Polyline.polylineEditor = L.Polyline.extend({
 
                                     if (i == 0) {
                                         i = panos.length - 1;
+                                        map.setView([panos[i].latitude, panos[i].longitude], map.getZoom());
                                         loc.setLatLng([panos[i].latitude, panos[i].longitude]).update();
                                     } else {
                                         i = i - 1;
+                                        map.setView([panos[i].latitude, panos[i].longitude], map.getZoom());
                                         loc.setLatLng([panos[i].latitude, panos[i].longitude]).update();
                                     }
 
@@ -334,9 +401,11 @@ L.Polyline.polylineEditor = L.Polyline.extend({
                                     }
                                     if (i == panos.length - 1) {
                                         i = 0;
+                                        map.setView([panos[i].latitude, panos[i].longitude], map.getZoom());
                                         loc.setLatLng([panos[i].latitude, panos[i].longitude]).update();
                                     } else {
                                         i = 1 + i;
+                                        map.setView([panos[i].latitude, panos[i].longitude], map.getZoom());
                                         loc.setLatLng([panos[i].latitude, panos[i].longitude]).update();
                                     }
                                     console.log(i);
